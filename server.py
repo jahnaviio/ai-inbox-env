@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 from myenv.environment import InboxEnv
 from myenv.models import Action
 
@@ -13,20 +12,17 @@ def home():
     return {"message": "AI Inbox Env is running"}
 
 
+# ✅ RESET (GET + POST both supported)
 @app.get("/reset")
+@app.post("/reset")
 async def reset():
     result = await env.reset()
     return result
 
 
-class ActionInput(BaseModel):
-    action_type: str
-    label: str = None
-    response_text: str = None
-
-
+# ✅ STEP (POST only)
 @app.post("/step")
-async def step(action: ActionInput):
-    action_obj = Action(**action.dict())
-    result = await env.step(action_obj)
+async def step(action: dict):
+    act = Action(**action)
+    result = await env.step(act)
     return result
