@@ -6,4 +6,7 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
+# 🔥 IMPORTANT FIX
+ENV PYTHONPATH=/app
+
+CMD ["python", "-m", "uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
