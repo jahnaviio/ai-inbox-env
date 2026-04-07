@@ -1,8 +1,6 @@
 from typing import Dict, Any
-import random
-
 from .models import Observation, Action
-from .tasks import get_task, grade_action
+from .tasks import get_task
 
 
 class InboxEnv:
@@ -12,42 +10,52 @@ class InboxEnv:
         self.task_type = task_type
         self.email_counter = 0
 
-    def reset(self):
+    async def reset(self) -> Dict[str, Any]:
         self.done = False
         self.current_email = get_task(self.task_type)
         self.email_counter += 1
-
-        senders = [
-            "boss@company.com",
-            "friend@gmail.com",
-            "noreply@alerts.com",
-            "hr@jobs.com"
-        ]
 
         observation = Observation(
             email_id=self.email_counter,
             subject=self.current_email["subject"],
             body=self.current_email["body"],
-            sender=random.choice(senders)
+            sender="test@example.com"
         )
 
-        return observation
+        return {
+            "observation": observation,
+            "reward": 0.0,
+            "done": False,
+            "info": {}
+        }
 
-    def step(self, action: Action):
+    async def step(self, action: Action) -> Dict[str, Any]:
         if self.done:
-            return None, 0.0, True, {}
+            return {
+                "observation": None,
+                "reward": 0.0,
+                "done": True,
+                "info": {}
+            }
 
-        reward = grade_action(self.current_email, action)
+        correct_label = self.current_email["label"]
+        reward = 1.0 if action.label == correct_label else 0.0
+
         self.done = True
 
         observation = Observation(
             email_id=self.email_counter,
             subject=self.current_email["subject"],
             body=self.current_email["body"],
-            sender="system"
+            sender="test@example.com"
         )
 
-        return observation, reward, True, {"correct_label": self.current_email["label"]}
+        return {
+            "observation": observation,
+            "reward": reward,
+            "done": True,
+            "info": {"correct_label": correct_label}
+        }
 
-    def close(self):
+    async def close(self):
         pass
