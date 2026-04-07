@@ -1,0 +1,10 @@
+name: ai_inbox_env
+description: Email classification environment for AI agents
+
+entry_point: myenv.environment:InboxEnv
+
+tasks:
+  - name: easy
+  - name: medium
+  - name: hard
+  
