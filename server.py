@@ -1,98 +1,32 @@
-<<<<<<< HEAD
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-import subprocess
+from pydantic import BaseModel
+from myenv.environment import InboxEnv
+from myenv.models import Action
 
 app = FastAPI()
 
+env = InboxEnv()
 
-@app.get("/", response_class=HTMLResponse)
+
+@app.get("/")
 def home():
-    return """
-    <html>
-        <body style="font-family: Arial; text-align:center; margin-top:50px;">
-
-            <h1>AI Email Assistant</h1>
-
-            <button onclick="runAgent()">Run AI</button>
-
-            <pre id="output" style="
-                margin-top:20px;
-                text-align:left;
-                width:60%;
-                margin-left:auto;
-                margin-right:auto;
-                white-space:pre-wrap;
-                word-wrap:break-word;
-                border:1px solid #ccc;
-                padding:15px;
-            "></pre>
-
-            <script>
-                async function runAgent() {
-                    document.getElementById("output").innerText = "Running...";
-
-                    const res = await fetch("/run");
-                    const data = await res.text();
-
-                    document.getElementById("output").innerText = data;
-                }
-            </script>
-
-        </body>
-    </html>
-    """
+    return {"message": "AI Inbox Env is running"}
 
 
-@app.get("/run")
-def run():
-=======
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-import subprocess
-
-app = FastAPI()
+@app.get("/reset")
+async def reset():
+    result = await env.reset()
+    return result
 
 
-@app.get("/", response_class=HTMLResponse)
-def home():
-    return """
-    <html>
-        <body style="font-family: Arial; text-align:center; margin-top:50px;">
-
-            <h1>AI Email Assistant</h1>
-
-            <button onclick="runAgent()">Run AI</button>
-
-            <pre id="output" style="
-                margin-top:20px;
-                text-align:left;
-                width:60%;
-                margin-left:auto;
-                margin-right:auto;
-                white-space:pre-wrap;
-                word-wrap:break-word;
-                border:1px solid #ccc;
-                padding:15px;
-            "></pre>
-
-            <script>
-                async function runAgent() {
-                    document.getElementById("output").innerText = "Running...";
-
-                    const res = await fetch("/run");
-                    const data = await res.text();
-
-                    document.getElementById("output").innerText = data;
-                }
-            </script>
-
-        </body>
-    </html>
-    """
+class ActionInput(BaseModel):
+    action_type: str
+    label: str = None
+    response_text: str = None
 
 
-@app.get("/run")
-def run():
->>>>>>> cba4c8e (removed pycache folders)
-    return subprocess.getoutput("py gmail_ai_agent.py")
+@app.post("/step")
+async def step(action: ActionInput):
+    action_obj = Action(**action.dict())
+    result = await env.step(action_obj)
+    return result
