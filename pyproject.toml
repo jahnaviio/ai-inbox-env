@@ -2,7 +2,7 @@
 name = "ai-inbox-env"
 version = "0.1.0"
 description = "AI Inbox Environment for OpenEnv"
-authors = [{name = "Your Name"}]
+authors = [{name = "Jahnavi"}]
 requires-python = ">=3.9"
 
 dependencies = [
@@ -13,8 +13,9 @@ dependencies = [
     "openenv-core>=0.2.0"
 ]
 
+# ✅ REQUIRED
 [project.scripts]
-start = "server.app:app"
+start = "server.app:main"
 
 [tool.openenv]
 entrypoint = "server.app:app"
