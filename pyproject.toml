@@ -1,0 +1,16 @@
+[project]
+name = "ai-inbox-env"
+version = "0.1.0"
+description = "AI Inbox Environment for OpenEnv"
+authors = [{name = "Your Name"}]
+requires-python = ">=3.9"
+
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "openai"
+]
+
+[tool.openenv]
+entrypoint = "server:app"
