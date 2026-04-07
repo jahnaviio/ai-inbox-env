@@ -1,16 +1,26 @@
-[project]
-name = "ai-inbox-env"
-version = "0.1.0"
-description = "AI Inbox Environment for OpenEnv"
-authors = [{name = "Your Name"}]
-requires-python = ">=3.9"
+from fastapi import FastAPI
+from myenv.environment import InboxEnv
+from myenv.models import Action
 
-dependencies = [
-    "fastapi",
-    "uvicorn",
-    "pydantic",
-    "openai"
-]
+app = FastAPI()
 
-[tool.openenv]
-entrypoint = "server:app"
+env = InboxEnv()
+
+
+@app.get("/")
+def home():
+    return {"message": "AI Inbox Env is running"}
+
+
+@app.get("/reset")
+@app.post("/reset")
+async def reset():
+    result = await env.reset()
+    return result
+
+
+@app.post("/step")
+async def step(action: dict):
+    act = Action(**action)
+    result = await env.step(act)
+    return result
