@@ -1,9 +1,9 @@
 from fastapi import FastAPI
+import uvicorn
 from myenv.environment import InboxEnv
 from myenv.models import Action
 
 app = FastAPI()
-
 env = InboxEnv()
 
 
@@ -24,3 +24,13 @@ async def step(action: dict):
     act = Action(**action)
     result = await env.step(act)
     return result
+
+
+# ✅ REQUIRED FOR OPENENV
+def main():
+    uvicorn.run("server.app:app", host="0.0.0.0", port=7860)
+
+
+# ✅ REQUIRED
+if __name__ == "__main__":
+    main()
