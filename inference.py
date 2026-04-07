@@ -6,20 +6,23 @@ from openai import OpenAI
 from myenv.environment import InboxEnv
 from myenv.models import Action
 
-# ENV VARIABLES
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
+# ================= ENV VARIABLES =================
+HF_TOKEN = os.getenv("HF_TOKEN")  # ✅ NO default (required)
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 
-TASK_NAME = "easy"
 BENCHMARK = "ai_inbox_env"
 
 MAX_STEPS = 5
 SUCCESS_THRESHOLD = 0.5
 
-client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+# ✅ OpenAI client
+client = OpenAI(
+    base_url=API_BASE_URL,
+    api_key=HF_TOKEN
+)
 
-# ---------- LOG FUNCTIONS ----------
+# ================= LOG FUNCTIONS =================
 def log_start(task: str, env: str, model: str):
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
@@ -38,17 +41,17 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]):
         flush=True
     )
 
-# ---------- SIMPLE LLM DECISION ----------
+# ================= LLM DECISION =================
 def decide_action_llm(subject: str, body: str) -> Action:
     prompt = f"""
-    Classify this email into one of:
-    spam, important, personal
+Classify this email into one of:
+spam, important, personal
 
-    Subject: {subject}
-    Body: {body}
+Subject: {subject}
+Body: {body}
 
-    Only return one word.
-    """
+Only return one word.
+"""
 
     try:
         response = client.chat.completions.create(
@@ -57,13 +60,11 @@ def decide_action_llm(subject: str, body: str) -> Action:
             max_tokens=10
         )
 
-        label = response.choices[0].message.content.strip().lower()
+        label = (response.choices[0].message.content or "").strip().lower()
 
-    except:
-        # fallback (important if API fails)
-        label = "personal"
+    except Exception:
+        label = "personal"  # fallback
 
-    # map to action
     if "spam" in label:
         return Action(action_type="move", label="spam")
 
@@ -80,8 +81,8 @@ def decide_action_llm(subject: str, body: str) -> Action:
         response_text="Sounds good!"
     )
 
-# ---------- MAIN ----------
-async def run_agent(task_name):
+# ================= MAIN AGENT =================
+async def run_agent(task_name: str):
     env = InboxEnv()
     env.task_type = task_name
 
@@ -126,7 +127,7 @@ async def run_agent(task_name):
         await env.close()
         log_end(success, steps_taken, score, rewards)
 
-# ---------- RUN ----------
+# ================= RUN =================
 if __name__ == "__main__":
     for task in ["easy", "medium", "hard"]:
         asyncio.run(run_agent(task))
