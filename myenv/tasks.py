@@ -1,67 +1,56 @@
-from myenv.models import Action
 import random
+from myenv.models import Action
 
-TASKS = {
-    "easy": [
-        {
-            "subject": "Team meeting tomorrow",
-            "body": "We will discuss project updates",
-            "label": "important"
-        }
-    ],
 
-    "medium": [
-        {
-            "subject": "Limited offer! Earn money fast",
-            "body": "Click here to earn money instantly",
-            "label": "spam"
-        },
-        {
-            "subject": "Lunch plans?",
-            "body": "Are you free this weekend?",
-            "label": "personal"
-        }
-    ],
+def get_task(task_type="easy"):
+    if task_type == "easy":
+        return random.choice([
+            {"subject": "Meeting Tomorrow", "body": "Project meeting at 10 AM", "label": "important"},
+            {"subject": "Hey!", "body": "Let's catch up this weekend", "label": "personal"},
+            {"subject": "Free Offer!", "body": "Click to win money", "label": "spam"},
+        ])
 
-    "hard": [
-        {
-            "subject": "Project deadline reminder",
-            "body": "Final submission tomorrow, please review attached files",
-            "label": "important"
-        },
-        {
-            "subject": "Internship opportunity",
-            "body": "Apply now to gain experience and earn money",
-            "label": "spam"
-        },
-        {
-            "subject": "Re: Last discussion",
-            "body": "Let's continue our previous conversation about the trip",
-            "label": "personal"
-        }
+    if task_type == "medium":
+        return random.choice([
+            {"subject": "Job Opportunity", "body": "Apply now for high salary", "label": "spam"},
+            {"subject": "Project Update", "body": "Deadline is approaching", "label": "important"},
+            {"subject": "Dinner Plan", "body": "Shall we go out tonight?", "label": "personal"},
+        ])
+
+    if task_type == "hard":
+        return random.choice([
+            {"subject": "Limited Time Offer", "body": "Urgent offer just for you", "label": "spam"},
+            {"subject": "Team Sync", "body": "Important project discussion", "label": "important"},
+            {"subject": "Long time no see", "body": "We should meet soon", "label": "personal"},
+        ])
+
+
+def decide_action(subject: str, body: str) -> Action:
+    text = (subject + " " + body).lower()
+
+    spam_keywords = [
+        "free", "click", "win", "offer",
+        "earn", "money", "job", "apply",
+        "limited time", "urgent", "lottery"
     ]
-}
 
+    if any(word in text for word in spam_keywords):
+        return Action(action_type="move", label="spam")
 
-def get_task(task_type):
-    return random.choice(TASKS[task_type])
+    if any(word in text for word in [
+        "noreply", "mailer-daemon", "delivery status"
+    ]):
+        return Action(action_type="ignore", label="system")
 
+    if "meeting" in text or "project" in text:
+        return Action(
+            action_type="respond",
+            label="important",
+            response_text="I will attend."
+        )
 
-def grade_action(task, action: Action) -> float:
-    correct = task["label"]
-
-    if action.label == correct:
-        return 1.0
-
-    # partial credit
-    if correct == "important" and action.label == "personal":
-        return 0.5
-
-    if correct == "personal" and action.label == "important":
-        return 0.5
-
-    # spam mistakes = strict
-    if correct == "spam" and action.label != "spam":
-        return 0.0
-
-    return 0.0
+    return Action(
+        action_type="respond",
+        label="personal",
+        response_text="Sounds good!"
+    )
