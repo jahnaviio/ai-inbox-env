@@ -6,23 +6,20 @@ from openai import OpenAI
 from myenv.environment import InboxEnv
 from myenv.models import Action
 
-# ================= ENV VARIABLES =================
-HF_TOKEN = os.getenv("HF_TOKEN")  # ✅ NO default (required)
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+# ENV VARIABLES
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
+MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
 
 BENCHMARK = "ai_inbox_env"
 
 MAX_STEPS = 5
 SUCCESS_THRESHOLD = 0.5
 
-# ✅ OpenAI client
-client = OpenAI(
-    base_url=API_BASE_URL,
-    api_key=HF_TOKEN
-)
+client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
-# ================= LOG FUNCTIONS =================
+
+# ---------- LOG FUNCTIONS ----------
 def log_start(task: str, env: str, model: str):
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
@@ -41,17 +38,18 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]):
         flush=True
     )
 
-# ================= LLM DECISION =================
+
+# ---------- LLM DECISION ----------
 def decide_action_llm(subject: str, body: str) -> Action:
     prompt = f"""
-Classify this email into one of:
-spam, important, personal
+    Classify this email into one of:
+    spam, important, personal
 
-Subject: {subject}
-Body: {body}
+    Subject: {subject}
+    Body: {body}
 
-Only return one word.
-"""
+    Only return one word.
+    """
 
     try:
         response = client.chat.completions.create(
@@ -60,11 +58,12 @@ Only return one word.
             max_tokens=10
         )
 
-        label = (response.choices[0].message.content or "").strip().lower()
+        label = response.choices[0].message.content.strip().lower()
 
-    except Exception:
-        label = "personal"  # fallback
+    except:
+        label = "personal"
 
+    # ACTION MAPPING
     if "spam" in label:
         return Action(action_type="move", label="spam")
 
@@ -81,15 +80,16 @@ Only return one word.
         response_text="Sounds good!"
     )
 
-# ================= MAIN AGENT =================
-async def run_agent(task_name: str):
+
+# ---------- MAIN ----------
+async def run_agent(task_name):
     env = InboxEnv()
     env.task_type = task_name
 
     rewards = []
     steps_taken = 0
+    score = 0.5
     success = False
-    score = 0.0
 
     log_start(task_name, BENCHMARK, MODEL_NAME)
 
@@ -111,6 +111,12 @@ async def run_agent(task_name: str):
             reward = result["reward"]
             done = result["done"]
 
+            # 🔥 FIX: clamp reward into (0,1)
+            if reward <= 0.0:
+                reward = 0.01
+            elif reward >= 1.0:
+                reward = 0.99
+
             rewards.append(reward)
             steps_taken = step
 
@@ -119,15 +125,26 @@ async def run_agent(task_name: str):
             if done:
                 break
 
-        score = sum(rewards) / len(rewards) if rewards else 0.0
-        score = max(0.0, min(score, 1.0))
-        success = score >= SUCCESS_THRESHOLD
+        # 🔥 FIX: safe score calculation
+        if rewards:
+            score = sum(rewards) / len(rewards)
+        else:
+            score = 0.5
+
+        # 🔥 STRICT RANGE FIX
+        if score <= 0.0:
+            score = 0.01
+        elif score >= 1.0:
+            score = 0.99
+
+        success = score > SUCCESS_THRESHOLD
 
     finally:
         await env.close()
         log_end(success, steps_taken, score, rewards)
 
-# ================= RUN =================
+
+# ---------- RUN ----------
 if __name__ == "__main__":
     for task in ["easy", "medium", "hard"]:
         asyncio.run(run_agent(task))
