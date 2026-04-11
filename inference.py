@@ -6,11 +6,12 @@ from openai import OpenAI
 from myenv.environment import InboxEnv
 from myenv.models import Action
 
-# ENV VARIABLES
+# ENV
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
 
+TASK_NAME = "easy"
 BENCHMARK = "ai_inbox_env"
 
 MAX_STEPS = 5
@@ -18,8 +19,7 @@ SUCCESS_THRESHOLD = 0.5
 
 client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
-
-# ---------- LOG FUNCTIONS ----------
+# ---------- LOG ----------
 def log_start(task: str, env: str, model: str):
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
@@ -38,8 +38,14 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]):
         flush=True
     )
 
+# ---------- SAFE OBS ACCESS ----------
+def get_obs_fields(obs):
+    try:
+        return obs["subject"], obs["body"]
+    except:
+        return "", ""
 
-# ---------- LLM DECISION ----------
+# ---------- LLM ----------
 def decide_action_llm(subject: str, body: str) -> Action:
     prompt = f"""
     Classify this email into one of:
@@ -63,7 +69,6 @@ def decide_action_llm(subject: str, body: str) -> Action:
     except:
         label = "personal"
 
-    # ACTION MAPPING
     if "spam" in label:
         return Action(action_type="move", label="spam")
 
@@ -80,7 +85,6 @@ def decide_action_llm(subject: str, body: str) -> Action:
         response_text="Sounds good!"
     )
 
-
 # ---------- MAIN ----------
 async def run_agent(task_name):
     env = InboxEnv()
@@ -88,8 +92,8 @@ async def run_agent(task_name):
 
     rewards = []
     steps_taken = 0
-    score = 0.5
     success = False
+    score = 0.0
 
     log_start(task_name, BENCHMARK, MODEL_NAME)
 
@@ -102,7 +106,9 @@ async def run_agent(task_name):
             if result["done"]:
                 break
 
-            action = decide_action_llm(obs.subject, obs.body)
+            subject, body = get_obs_fields(obs)
+
+            action = decide_action_llm(subject, body)
             action_str = f"{action.action_type}:{action.label}"
 
             result = await env.step(action)
@@ -110,12 +116,6 @@ async def run_agent(task_name):
             obs = result["observation"]
             reward = result["reward"]
             done = result["done"]
-
-            # 🔥 FIX: clamp reward into (0,1)
-            if reward <= 0.0:
-                reward = 0.01
-            elif reward >= 1.0:
-                reward = 0.99
 
             rewards.append(reward)
             steps_taken = step
@@ -125,24 +125,23 @@ async def run_agent(task_name):
             if done:
                 break
 
-        # 🔥 FIX: safe score calculation
+        # ---------- SCORE FIX ----------
         if rewards:
             score = sum(rewards) / len(rewards)
         else:
-            score = 0.5
+            score = 0.01
 
-        # 🔥 STRICT RANGE FIX
+        # clamp STRICTLY (0,1)
         if score <= 0.0:
             score = 0.01
         elif score >= 1.0:
             score = 0.99
 
-        success = score > SUCCESS_THRESHOLD
+        success = score >= SUCCESS_THRESHOLD
 
     finally:
         await env.close()
         log_end(success, steps_taken, score, rewards)
-
 
 # ---------- RUN ----------
 if __name__ == "__main__":
