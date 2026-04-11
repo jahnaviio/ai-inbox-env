@@ -1,116 +1,67 @@
-# AI Inbox Environment (OpenEnv)
-
-## 📌 Overview
-
-AI Inbox Environment is a real-world simulation of email triage, where an AI agent must classify incoming emails and decide appropriate actions such as marking spam, responding to important emails, or handling personal messages.
-
-This environment is designed to evaluate and train AI agents on practical decision-making tasks similar to real email management systems.
-
 ---
-
-## 🎯 Motivation
-
-Email overload is a real-world problem. This environment simulates how AI can assist users in:
-
-- Filtering spam emails
-- Identifying important communications
-- Managing personal conversations
-
-It provides a structured benchmark for evaluating intelligent agents in a realistic domain.
-
+title: AI Inbox Env
+emoji: 📧
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_file: server/app.py
+pinned: false
 ---
+# SmartInbox RL Environment
 
-## 🧠 Environment Design
+An OpenEnv-based reinforcement learning environment that simulates real-world email management.
 
-The environment follows the OpenEnv standard:
+## Problem
 
-### Core APIs
+Managing emails is not just classification — it involves prioritization, decision-making, and trade-offs.
 
-- `reset()` → Initializes a new email task
-- `step(action)` → Processes agent action and returns:
-  - observation
-  - reward
-  - done
-  - info
-- `state()` → (can be extended)
+Agents must:
+- identify spam
+- prioritize important emails
+- decide when to respond
+- avoid wasting time on irrelevant messages
 
----
+## Environment Design
 
-## 📥 Observation Space
+This environment models a dynamic inbox where:
+- multiple emails are processed sequentially
+- each action has a cost (time/effort)
+- wrong decisions have penalties
 
-Each observation contains:
+## Action Space
 
-- `email_id` (int)
-- `subject` (str)
-- `body` (str)
-- `sender` (str)
+- move_to_spam
+- respond
+- ignore
 
----
+## Observation Space
 
-## 🎬 Action Space
+Each step provides:
+- subject
+- body
+- sender
 
-Agent outputs an action with:
+## Reward Design
 
-- `action_type`:
-  - `respond`
-  - `ignore`
-- `label`:
-  - `spam`
-  - `important`
-  - `personal`
-- `response_text` (optional)
+Rewards are shaped to simulate real-world trade-offs:
 
----
+- Correct classification: +0.7
+- Incorrect decision: -0.4
+- Responding to spam: -0.3
+- Ignoring important email: -0.6
+- Reply cost: -0.1
 
-## 🧪 Tasks
+All rewards are normalized to (0,1) for stable evaluation.
 
-### 🟢 Easy
-- Clear classification (e.g., meeting emails)
-- Straightforward decision
+## Tasks
 
-### 🟡 Medium
-- Mix of spam and personal emails
-- Requires better keyword understanding
+- Easy → clear signals
+- Medium → ambiguous emails
+- Hard → realistic phishing + mixed intent emails
 
-### 🔴 Hard
-- Ambiguous emails
-- Requires contextual reasoning
+## Real-World Impact
 
----
-
-## 🏆 Reward Function
-
-The environment provides **dense rewards**:
-
-- `1.0` → correct classification
-- `0.5` → partially correct (important vs personal confusion)
-- `0.0` → incorrect (especially spam mistakes)
-
-This allows agents to learn progressively rather than relying on binary success.
-
----
-
-## 🤖 Baseline Agent
-
-A deterministic rule-based agent is provided:
-
-- Uses keyword matching
-- Produces consistent and reproducible results
-- Runs within required time constraints
-
----
-
-## 📊 Baseline Results
-
-| Task   | Score |
-|--------|------|
-| Easy   | 1.00 |
-| Medium | 0.50–1.00 |
-| Hard   | 0.50–1.00 |
-
----
-
-## ⚙️ Setup Instructions
-
-```bash
-pip install -r requirements.txt
+This environment can be used to train AI agents for:
+- email assistants
+- productivity tools
+- enterprise inbox automation
