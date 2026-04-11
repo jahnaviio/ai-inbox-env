@@ -7,6 +7,7 @@ sdk: docker
 app_file: server/app.py
 pinned: false
 ---
+Unlike traditional spam filters, this environment focuses on sequential decision-making under constraints, making it suitable for training intelligent agents rather than static classifiers.
 # SmartInbox RL Environment
 
 An OpenEnv-based reinforcement learning environment that simulates real-world email management.
