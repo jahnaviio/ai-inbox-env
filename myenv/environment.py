@@ -41,11 +41,11 @@ class InboxEnv:
 
         if self.task_type == "hard":
             return [
-                Email(1, "Free Career Webinar", "Enhance your skills", "career@mail.com", "important"),
-                Email(2, "Urgent: Account Suspended", "Verify now", "fakebank@mail.com", "spam"),
-                Email(3, "Catch up soon", "Long time no see", "friend@mail.com", "personal"),
-                Email(4, "Project Deadline Reminder", "Submit work today", "manager@mail.com", "important"),
-                Email(5, "Special Promotion", "Exclusive deal for you", "ads@mail.com", "spam"),
+                Email(1, "Important: Free Certification Opportunity", "Limited seats apply now", "career@mail.com", "important"),
+                Email(2, "URGENT: Your account is locked", "Click immediately to verify", "fakebank@mail.com", "spam"),
+                Email(3, "Long time no see", "Let's catch up this weekend", "friend@mail.com", "personal"),
+                Email(4, "Deadline Reminder", "Submit your project by EOD", "manager@mail.com", "important"),
+                Email(5, "Exclusive Offer Just for You", "Limited time deal click now", "ads@mail.com", "spam"),
             ]
 
     # ---------- RESET ----------
@@ -72,7 +72,6 @@ class InboxEnv:
             }
 
         email = self.inbox[self.current_step]
-
         reward = self.calculate_reward(email, action)
 
         self.current_step += 1
@@ -105,25 +104,20 @@ class InboxEnv:
     def calculate_reward(self, email: Email, action: Action):
         reward = 0.0
 
-        # correct classification
         if action.label == email.true_label:
             reward += 0.7
         else:
             reward -= 0.4
 
-        # penalize unnecessary reply
         if action.action_type == "respond" and email.true_label == "spam":
             reward -= 0.3
 
-        # penalize ignoring important
         if action.action_type == "ignore" and email.true_label == "important":
             reward -= 0.6
 
-        # small cost for replying
         if action.action_type == "respond":
             reward -= 0.1
 
-        # 🔥 clamp into (0,1)
         if reward <= 0:
             reward = 0.05
         elif reward >= 1:
