@@ -7,10 +7,14 @@ sdk: docker
 app_file: server/app.py
 pinned: false
 ---
-Unlike traditional spam filters, this environment focuses on sequential decision-making under constraints, making it suitable for training intelligent agents rather than static classifiers.
+
 # SmartInbox RL Environment
 
-An OpenEnv-based reinforcement learning environment that simulates real-world email management.
+Unlike traditional spam filters, this environment focuses on sequential decision-making under constraints, making it suitable for training intelligent agents rather than static classifiers.
+
+## Overview
+
+This is an OpenEnv-based reinforcement learning environment that simulates real-world email management.
 
 ## Problem
 
@@ -46,23 +50,23 @@ Each step provides:
 
 Rewards are shaped to simulate real-world trade-offs:
 
-- Correct classification: +0.7
-- Incorrect decision: -0.4
-- Responding to spam: -0.3
-- Ignoring important email: -0.6
-- Reply cost: -0.1
+- Correct classification: +0.7  
+- Incorrect decision: -0.4  
+- Responding to spam: -0.3  
+- Ignoring important email: -0.6  
+- Reply cost: -0.1  
 
 All rewards are normalized to (0,1) for stable evaluation.
 
 ## Tasks
 
-- Easy → clear signals
-- Medium → ambiguous emails
-- Hard → realistic phishing + mixed intent emails
+- Easy → clear signals  
+- Medium → ambiguous emails  
+- Hard → phishing + mixed intent emails  
 
 ## Real-World Impact
 
 This environment can be used to train AI agents for:
-- email assistants
-- productivity tools
-- enterprise inbox automation
+- email assistants  
+- productivity tools  
+- enterprise inbox automation  
